@@ -12,9 +12,27 @@ with open(model_path, "rb") as model_file:
     catboost_model = pickle.load(model_file)
 
 def preprocess(df):
-    df_pd = pd.read_csv(df)
-    # Ajoutez ici des étapes de prétraitement si nécessaire
-    return df_pd
+    data = pd.read_csv(df)
+    # data cleaning
+    data=data.drop(['far_price','near_price', 'row_id', 'time_id', 'date_id'],axis=1)
+    data.dropna(subset=['target'],inplace=True)
+
+#feature engineering
+    data['imbalance_ratio'] = data['imbalance_size']/data['matched_size']
+    data['spread_size'] = data['ask_size']-data['bid_size']
+    data['spread_size_ratio'] = data['ask_size']/data['bid_size']
+    data['bid_value'] = data['bid_price']*data['bid_size']
+    data['ask_value'] = data['ask_price']*data['ask_size']
+    data['spread_price'] = (data['ask_price']-data['bid_price'])/(data['ask_price'])
+    data['wap_spread'] = ((data['bid_price']*data['bid_size'])+(data['ask_price']*data['ask_size']))/(data['bid_size']+data['ask_size'])
+
+    data=data.drop(['matched_size','stock_id'],axis=1)
+    data = data.dropna()
+
+    return data
+
+
+
 
 @app.route('/')
 def welcome():
