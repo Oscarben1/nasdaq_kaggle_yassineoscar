@@ -30,13 +30,10 @@ def preprocess(df):
     data=data.drop(['matched_size','stock_id'],axis=1)
     data = data.dropna()
 
-
     scaler = StandardScaler()
-    X = scaler.fit_transform(X)
+    X = scaler.fit_transform(data)
 
-
-
-    return data
+    return X
 
 
 
