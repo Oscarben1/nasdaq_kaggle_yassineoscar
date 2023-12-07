@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel, Field
 from typing import Optional
+import json
 
 
 class StockData(BaseModel):
@@ -44,7 +45,7 @@ def preprocess(df):
     data['wap_spread'] = ((data['bid_price']*data['bid_size'])+(data['ask_price']*data['ask_size']))/(data['bid_size']+data['ask_size'])
 
     data=data.drop(['matched_size','stock_id'],axis=1)
-    data = data.fillna()
+    # data = data.fillna(999)
 
     return data
 
@@ -65,8 +66,9 @@ def predict(data: StockData):
     # # Check if any key has an empty value
     # if any(data[key] in [None, ''] for key in keys_to_check if key in data):
     #     return ValueError("Missing values for keys: {}".format(", ".join(key for key in keys_to_check if key in data)))
-    
 
     prediction = model.predict(df)
+    prediction_list = prediction.tolist()
 
-    return JSONResponse(prediction[0][0])
+
+    return JSONResponse(content=json.dumps(dict(enumerate(prediction_list))))
