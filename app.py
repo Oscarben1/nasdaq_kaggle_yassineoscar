@@ -1,11 +1,11 @@
-import json
 import joblib
 import pandas as pd
-# import tensorflow as tf
+import tensorflow as tf
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel, Field
 from typing import Optional
+
 
 class StockData(BaseModel):
     stock_id: int
@@ -27,45 +27,46 @@ class StockData(BaseModel):
 
 app = FastAPI()
 
-scaler = joblib.load('models/scaler.pkl')
-model = joblib.load('models/model.pkl')
+model = tf.keras.models.load_model('.')
 
-@app.get("/")
+def preprocess(df):
+    data = pd.DataFrame([df.dict()])
+    # data cleaning
+    data=data.drop(['far_price','near_price', 'row_id', 'time_id', 'date_id'],axis=1)
+
+#feature engineering
+    data['imbalance_ratio'] = data['imbalance_size']/data['matched_size']
+    data['spread_size'] = data['ask_size']-data['bid_size']
+    data['spread_size_ratio'] = data['ask_size']/data['bid_size']
+    data['bid_value'] = data['bid_price']*data['bid_size']
+    data['ask_value'] = data['ask_price']*data['ask_size']
+    data['spread_price'] = (data['ask_price']-data['bid_price'])/(data['ask_price'])
+    data['wap_spread'] = ((data['bid_price']*data['bid_size'])+(data['ask_price']*data['ask_size']))/(data['bid_size']+data['ask_size'])
+
+    data=data.drop(['matched_size','stock_id'],axis=1)
+    data = data.fillna()
+
+    return data
+
+
+@app.get("/", include_in_schema=False)
 async def root():
     return RedirectResponse(url="/docs")
 
-@app.get("/predict")
+@app.post("/predict")
 def predict(data: StockData):
-    if 'far_price' in data:
-        del data['far_price']
+# def predict(data):
 
-    if 'near_price' in data:
-        del data['near_price']
+    df =  preprocess(data)
 
     # gestion d'erreur necessaire ici
-    keys_to_check = ["imbalance_size", "reference_price", "matched_size", "bid_price", "ask_price", "wap"]
+    # keys_to_check = ["imbalance_size", "reference_price", "matched_size", "bid_price", "ask_price", "wap"]
 
-    # Check if any key has an empty value
-    if any(data[key] in [None, ''] for key in keys_to_check if key in data):
-        return ValueError("Missing values for keys: {}".format(", ".join(key for key in keys_to_check if key in data)))
-
-    data['imbalance_ratio'] = data['imbalance_size']/data['matched_size']
-
-    data['spread_size'] = data['ask_size']-data['bid_size']
-    data['spread_size_ratio'] = data['ask_size']/data['bid_size']
-
-    data['bid_value'] = data['bid_price']*data['bid_size']
-    data['ask_value'] = data['ask_price']*data['ask_size']
-
-    data['spread_price'] = (data['ask_price']-data['bid_price'])/(data['ask_price'])
-
-    data['wap_spread'] = ((data['bid_price']*data['bid_size'])+(data['ask_price']*data['ask_size']))/(data['bid_size']+data['ask_size'])
-
-    df = pd.DataFrame([data])
-    df = df.set_index('stock_id')
-
-    scaled = scaler.transform(df)
+    # # Check if any key has an empty value
+    # if any(data[key] in [None, ''] for key in keys_to_check if key in data):
+    #     return ValueError("Missing values for keys: {}".format(", ".join(key for key in keys_to_check if key in data)))
     
-    prediction = model.predict(scaled)
+
+    prediction = model.predict(df)
 
     return JSONResponse(prediction[0][0])
