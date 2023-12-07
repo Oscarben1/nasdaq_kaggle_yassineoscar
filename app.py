@@ -1,7 +1,7 @@
 import json
 import joblib
 import pandas as pd
-import tensorflow as tf
+# import tensorflow as tf
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -27,8 +27,8 @@ class StockData(BaseModel):
 
 app = FastAPI()
 
-scaler = joblib.load('scaler.pkl')
-model = tf.keras.models.load_model('.')
+scaler = joblib.load('models/scaler.pkl')
+model = joblib.load('models/model.pkl')
 
 @app.get("/")
 async def root():

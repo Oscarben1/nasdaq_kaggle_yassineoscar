@@ -1,19 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: flask-app
+  name: fastapi-app
+  labels:
+    app: fastapi
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
-      app: flask-app
+      app: fastapi
   template:
     metadata:
       labels:
-        app: flask-app
+        app: fastapi
     spec:
       containers:
-      - name: flask-container
-        image: nom_de_votre_image:tag  # Remplacez par le nom et le tag de votre image Docker
+      - name: fastapi-container
+        image: projectimage
         ports:
-        - containerPort: 8080
+        - containerPort: 80
