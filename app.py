@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel, Field
 from typing import Optional
 import json
+from sklearn.preprocessing import StandardScaler
 
 
 class StockData(BaseModel):
@@ -45,9 +46,11 @@ def preprocess(df):
     data['wap_spread'] = ((data['bid_price']*data['bid_size'])+(data['ask_price']*data['ask_size']))/(data['bid_size']+data['ask_size'])
 
     data=data.drop(['matched_size','stock_id'],axis=1)
-    # data = data.fillna(999)
 
-    return data
+    scaler = StandardScaler()
+    X = scaler.fit_transform(data)
+
+    return X
 
 
 @app.get("/", include_in_schema=False)
