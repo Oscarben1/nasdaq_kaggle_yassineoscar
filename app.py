@@ -1,7 +1,7 @@
 import joblib
 import pandas as pd
 import tensorflow as tf
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -47,11 +47,14 @@ def preprocess(df):
 
     data=data.drop(['matched_size','stock_id'],axis=1)
 
-    scaler = StandardScaler()
-    X = scaler.fit_transform(data)
+    return data
 
-    return X
-
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+    )
 
 @app.get("/", include_in_schema=False)
 async def root():
