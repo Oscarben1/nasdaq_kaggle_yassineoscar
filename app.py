@@ -29,6 +29,7 @@ class StockData(BaseModel):
 
 app = FastAPI()
 
+scaler = joblib.load('scaler.pkl')
 model = tf.keras.models.load_model('.')
 
 def preprocess(df):
@@ -47,7 +48,9 @@ def preprocess(df):
 
     data=data.drop(['matched_size','stock_id'],axis=1)
 
-    return data
+    scaled = scaler.transform(data)
+
+    return scaled
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc):
